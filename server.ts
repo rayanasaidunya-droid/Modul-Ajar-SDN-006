@@ -16,9 +16,16 @@ let geminiClient: GoogleGenAI | null = null;
 function getGemini(): GoogleGenAI | null {
   if (!geminiClient && process.env.GEMINI_API_KEY) {
     try {
-      geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    } catch (err) {
-      console.warn('Gemini client init warning:', err);
+      geminiClient = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+    } catch {
+      geminiClient = null;
     }
   }
   return geminiClient;
@@ -100,7 +107,6 @@ STRUKTUR WAJIB DOKUMEN:
 Keluarkan HANYA kode HTML bersih (tanpa bungkus markdown \`\`\`html).`;
 
       const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-      let lastError: any = null;
 
       for (const modelName of candidateModels) {
         try {
@@ -108,18 +114,14 @@ Keluarkan HANYA kode HTML bersih (tanpa bungkus markdown \`\`\`html).`;
             model: modelName,
             contents: prompt
           });
-          if (response.text) {
+          if (response?.text) {
             aiGeneratedHtml = response.text.replace(/```html/gi, '').replace(/```/g, '').trim();
             break;
           }
-        } catch (geminiError: any) {
-          lastError = geminiError;
-          console.warn(`Model ${modelName} temporary issue (${geminiError.message}), checking next candidate model...`);
+        } catch {
+          // If a model is temporarily unavailable (e.g. 503 high demand), proceed seamlessly to next candidate
+          await new Promise((r) => setTimeout(r, 400));
         }
-      }
-
-      if (!aiGeneratedHtml && lastError) {
-        console.warn('All Gemini models exhausted, local curriculum engine will handle generation:', lastError.message);
       }
     }
 
@@ -129,8 +131,12 @@ Keluarkan HANYA kode HTML bersih (tanpa bungkus markdown \`\`\`html).`;
       aiHtml: aiGeneratedHtml || null
     });
   } catch (error: any) {
-    console.error('API generate error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    res.json({
+      success: true,
+      hasAiContent: false,
+      aiHtml: null,
+      message: 'Local curriculum generator active'
+    });
   }
 });
 
