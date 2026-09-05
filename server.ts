@@ -99,16 +99,27 @@ STRUKTUR WAJIB DOKUMEN:
 
 Keluarkan HANYA kode HTML bersih (tanpa bungkus markdown \`\`\`html).`;
 
-      try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: prompt
-        });
-        if (response.text) {
-          aiGeneratedHtml = response.text.replace(/```html/gi, '').replace(/```/g, '').trim();
+      const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      let lastError: any = null;
+
+      for (const modelName of candidateModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt
+          });
+          if (response.text) {
+            aiGeneratedHtml = response.text.replace(/```html/gi, '').replace(/```/g, '').trim();
+            break;
+          }
+        } catch (geminiError: any) {
+          lastError = geminiError;
+          console.warn(`Model ${modelName} temporary issue (${geminiError.message}), checking next candidate model...`);
         }
-      } catch (geminiError: any) {
-        console.warn('Gemini generation fallback triggered:', geminiError.message);
+      }
+
+      if (!aiGeneratedHtml && lastError) {
+        console.warn('All Gemini models exhausted, local curriculum engine will handle generation:', lastError.message);
       }
     }
 

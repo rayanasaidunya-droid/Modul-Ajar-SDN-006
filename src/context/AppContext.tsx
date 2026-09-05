@@ -10,6 +10,7 @@ interface ToastInfo {
 
 interface AppContextType {
   modules: TeachingModule[];
+  setModules: React.Dispatch<React.SetStateAction<TeachingModule[]>>;
   userProfile: UserProfile;
   darkMode: boolean;
   currentView: string;
@@ -459,6 +460,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         modules,
+        setModules,
         userProfile,
         darkMode,
         currentView,
