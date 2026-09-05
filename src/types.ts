@@ -1,5 +1,8 @@
 export type ModuleType =
   | 'Modul Ajar'
+  | 'RPP Mendalam'
+  | 'Modul Ajar PAUD'
+  | 'Modul Ajar Inklusi / SLB'
   | 'Alur Tujuan Pembelajaran (ATP)'
   | 'Capaian Pembelajaran (CP)'
   | 'Program Tahunan (Prota)'
@@ -7,7 +10,11 @@ export type ModuleType =
   | 'Asesmen & Rubrik'
   | 'Bahan Ajar & LKPD';
 
-export type FaseType = 'Fase A' | 'Fase B' | 'Fase C';
+export type CurriculumApproach = 'merdeka' | 'kbc' | 'hybrid' | 'k13';
+export type DocumentCategory = 'modul_ajar' | 'rpp' | 'paud' | 'slb';
+export type SatuanPendidikan = 'sd' | 'mi' | 'paud' | 'slb' | 'smp' | 'sma';
+
+export type FaseType = 'Fase Fondasi' | 'Fase A' | 'Fase B' | 'Fase C' | 'Fase D' | 'Fase E' | 'Fase F';
 
 export type StatusType = 'Draft' | 'Review' | 'Terverifikasi' | 'Diterbitkan';
 
@@ -19,7 +26,18 @@ export type SubjectType =
   | 'Pendidikan Agama Islam'
   | 'PJOK'
   | 'Seni Rupa'
-  | 'Bahasa Inggris';
+  | 'Seni Musik'
+  | 'Seni Tari'
+  | 'Seni Teater'
+  | 'Bahasa Inggris'
+  | 'Koding & Kecerdasan Artifisial'
+  | "Al-Qur'an Hadis"
+  | 'Akidah Akhlak'
+  | 'Fikih'
+  | 'Sejarah Kebudayaan Islam (SKI)'
+  | 'Bahasa Arab'
+  | 'Muatan Lokal / Bahasa Daerah'
+  | string;
 
 export interface LessonSteps {
   pendahuluan: string[];
@@ -27,11 +45,23 @@ export interface LessonSteps {
   penutup: string[];
 }
 
+export interface SupplementaryDocuments {
+  lkpdHtml?: string;
+  bahanAjarHtml?: string;
+  silabusHtml?: string;
+  protaHtml?: string;
+  prosemHtml?: string;
+}
+
 export interface TeachingModule {
   id: string;
   code: string;
   title: string;
   type: ModuleType;
+  curriculumApproach?: CurriculumApproach;
+  documentCategory?: DocumentCategory;
+  satuanPendidikan?: SatuanPendidikan;
+  kekhususanABK?: string;
   fase: FaseType;
   grade: number; // 1 - 6
   subject: SubjectType;
@@ -44,16 +74,26 @@ export interface TeachingModule {
   nipHeadmaster?: string;
   status: StatusType;
   allocatedHours: string;
+  jumlahPertemuan?: number;
+  jpPerPertemuan?: number;
+  durasiJP?: number;
+  totalJP?: number;
   targetStudents: string;
   profilPancasila: string[];
+  dpl8Selected?: string[];
+  kbcTemaSelected?: string[];
+  sesSelected?: string[];
   capaianPembelajaran: string;
   tujuanPembelajaran: string[];
   pemahamanBermakna: string;
   pertanyaanPemantik: string[];
   modelPembelajaran: string;
+  metodePembelajaran?: string[];
   saranaPrasarana: string[];
   langkahKegiatan: LessonSteps;
   asesmenDesc: string;
+  fullDocumentHtml?: string;
+  supplementaryDocs?: SupplementaryDocuments;
   lampiran: {
     lkpd: string;
     materiSingkat: string;

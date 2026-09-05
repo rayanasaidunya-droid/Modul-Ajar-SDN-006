@@ -26,8 +26,11 @@ export const ModuleDetailModal: React.FC = () => {
     setIsFormModalOpen,
     setPrintModule,
     setIsPrintPreviewOpen,
-    incrementDownload
+    incrementDownload,
+    showToast
   } = useApp();
+
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'full' | 'lkpd' | 'bahan' | 'silabus' | 'prota' | 'prosem'>('overview');
 
   if (!isDetailOpen || !selectedModule) return null;
 
@@ -41,6 +44,40 @@ export const ModuleDetailModal: React.FC = () => {
     incrementDownload(selectedModule.id);
     setPrintModule(selectedModule);
     setIsPrintPreviewOpen(true);
+  };
+
+  const handleDownloadWord = (contentHtml: string, titleSuffix: string) => {
+    const filename = `${selectedModule.code}_${titleSuffix.replace(/\s+/g, '_')}`;
+    const styledHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${filename}</title>
+          <style>
+            body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; color: #111; margin: 2cm; }
+            h2, h3, h4 { color: #003366; }
+            table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+            th, td { border: 1px solid #666; padding: 6px 8px; text-align: left; font-size: 10pt; }
+            th { background-color: #f0f4f8; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          ${contentHtml}
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff' + styledHtml], { type: 'application/msword;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`Dokumen Word (${filename}.doc) berhasil diunduh!`, 'success');
   };
 
   return (
@@ -98,8 +135,147 @@ export const ModuleDetailModal: React.FC = () => {
           </button>
         </div>
 
+        {/* Tab Navigation if full HTML or supplementary docs exist */}
+        {(selectedModule.fullDocumentHtml || selectedModule.supplementaryDocs) && (
+          <div className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-850 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                  activeTab === 'overview'
+                    ? 'bg-white dark:bg-slate-900 text-[#00529B] dark:text-blue-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+              >
+                Ringkasan Kurikulum
+              </button>
+              {selectedModule.fullDocumentHtml && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('full')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                    activeTab === 'full'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529B] dark:text-blue-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Naskah Lengkap Resmi
+                </button>
+              )}
+              {selectedModule.supplementaryDocs?.lkpdHtml && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('lkpd')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                    activeTab === 'lkpd'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529B] dark:text-blue-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  LKPD Siswa
+                </button>
+              )}
+              {selectedModule.supplementaryDocs?.bahanAjarHtml && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('bahan')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                    activeTab === 'bahan'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529B] dark:text-blue-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Bahan Ajar
+                </button>
+              )}
+              {selectedModule.supplementaryDocs?.silabusHtml && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('silabus')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                    activeTab === 'silabus'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529B] dark:text-blue-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Silabus / ATP
+                </button>
+              )}
+              {selectedModule.supplementaryDocs?.protaHtml && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('prota')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                    activeTab === 'prota'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529B] dark:text-blue-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Prota
+                </button>
+              )}
+              {selectedModule.supplementaryDocs?.prosemHtml && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('prosem')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${
+                    activeTab === 'prosem'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529B] dark:text-blue-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  Prosem
+                </button>
+              )}
+            </div>
+
+            {/* Word Download for active tab */}
+            {activeTab !== 'overview' && (
+              <button
+                type="button"
+                onClick={() => {
+                  let html = '';
+                  if (activeTab === 'full') html = selectedModule.fullDocumentHtml || '';
+                  else if (activeTab === 'lkpd') html = selectedModule.supplementaryDocs?.lkpdHtml || '';
+                  else if (activeTab === 'bahan') html = selectedModule.supplementaryDocs?.bahanAjarHtml || '';
+                  else if (activeTab === 'silabus') html = selectedModule.supplementaryDocs?.silabusHtml || '';
+                  else if (activeTab === 'prota') html = selectedModule.supplementaryDocs?.protaHtml || '';
+                  else if (activeTab === 'prosem') html = selectedModule.supplementaryDocs?.prosemHtml || '';
+                  handleDownloadWord(html, activeTab.toUpperCase());
+                }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#00529B] dark:text-blue-300 font-bold text-xs hover:bg-blue-100"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Unduh Word (.doc)</span>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Modal Scrollable Body */}
         <div className="p-5 sm:p-8 overflow-y-auto space-y-6 text-sm">
+          {activeTab !== 'overview' ? (
+            <div className="bg-white dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <div
+                dangerouslySetInnerHTML={{
+                  __html:
+                    activeTab === 'full'
+                      ? selectedModule.fullDocumentHtml || ''
+                      : activeTab === 'lkpd'
+                      ? selectedModule.supplementaryDocs?.lkpdHtml || ''
+                      : activeTab === 'bahan'
+                      ? selectedModule.supplementaryDocs?.bahanAjarHtml || ''
+                      : activeTab === 'silabus'
+                      ? selectedModule.supplementaryDocs?.silabusHtml || ''
+                      : activeTab === 'prota'
+                      ? selectedModule.supplementaryDocs?.protaHtml || ''
+                      : selectedModule.supplementaryDocs?.prosemHtml || ''
+                }}
+              />
+            </div>
+          ) : (
+            <>
           {/* 1. Informasi Umum Perangkat Ajar */}
           <section className="space-y-3">
             <h3 className="text-sm font-bold tracking-wider text-[#00529B] dark:text-blue-400 uppercase flex items-center gap-2">
@@ -280,6 +456,8 @@ export const ModuleDetailModal: React.FC = () => {
               </div>
             </div>
           </section>
+          </>
+          )}
         </div>
 
         {/* Modal Footer Controls */}
