@@ -41,6 +41,13 @@ export interface ModuleGenerationInput {
   kopConfig?: KopConfig;
 }
 
+// Helper to safely resolve logo data URI (supporting user custom logos, defaults, and migrating legacy svgs)
+function resolveKopLogo(logoUrl: string | undefined, defaultLogo: string): string {
+  if (logoUrl === '') return '';
+  if (!logoUrl || logoUrl.startsWith('data:image/svg+xml;utf8')) return defaultLogo;
+  return logoUrl;
+}
+
 // Generate Official Indonesian School Letterhead (KOP SURAT RESMI)
 export function generateKopSuratHtml(config?: Partial<KopConfig>, schoolFallback?: string): string {
   const c = { ...initialKopConfig, ...(config || {}) };
@@ -51,21 +58,23 @@ export function generateKopSuratHtml(config?: Partial<KopConfig>, schoolFallback
   const dept = c.departmentHeader || 'DINAS PENDIDIKAN DAN KEBUDAYAAN';
   const addr = c.schoolAddress || 'Jl. Menteng Raya No. 10, RT.01/RW.02, Kec. Menteng, Kota Jakarta Pusat 10340';
   const contact = c.schoolContact || 'Telp: (021) 3192849 • Posel: sdn01menteng@sekolah.belajar.id';
-  const leftLogo = c.leftLogoUrl || DEFAULT_TUT_WURI_LOGO;
-  const rightLogo = c.rightLogoUrl || DEFAULT_SCHOOL_LOGO;
+  const leftLogo = resolveKopLogo(c.leftLogoUrl, DEFAULT_TUT_WURI_LOGO);
+  const rightLogo = resolveKopLogo(c.rightLogoUrl, DEFAULT_SCHOOL_LOGO);
   const leftSize = c.leftLogoSize || 70;
   const rightSize = c.rightLogoSize || 70;
 
-  return `
+  return `<!-- KOP_SURAT_START -->
   <div class="kop-surat-official pb-3 mb-6" style="border-bottom: 3px double #000000; font-family: 'Times New Roman', 'Liberation Serif', serif; color: #000000; width: 100%;">
-    <table style="width: 100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+    <table class="kop-table" style="width: 100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
       <tbody>
-        <tr>
+        <tr style="border: none;">
           ${leftLogo ? `
           <td style="width: ${leftSize}px; text-align: center; vertical-align: middle; border: none; padding: 0 10px 0 0;">
-            <img src="${leftLogo}" alt="Logo Instansi" style="width: ${leftSize}px; max-height: ${leftSize}px; object-fit: contain; display: block; margin: 0 auto;" />
+            <img src="${leftLogo}" alt="Logo Instansi Kiri" style="width: ${leftSize}px; max-height: ${leftSize}px; object-fit: contain; display: block; margin: 0 auto;" />
           </td>
-          ` : ''}
+          ` : `
+          <td style="width: ${rightSize}px; border: none; padding: 0;"></td>
+          `}
           <td style="text-align: center; vertical-align: middle; border: none; padding: 0 8px;">
             ${gov ? `<div style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.25; color: #111;">${gov}</div>` : ''}
             ${dept ? `<div style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.25; margin-top: 1px; color: #111;">${dept}</div>` : ''}
@@ -75,15 +84,18 @@ export function generateKopSuratHtml(config?: Partial<KopConfig>, schoolFallback
           </td>
           ${rightLogo ? `
           <td style="width: ${rightSize}px; text-align: center; vertical-align: middle; border: none; padding: 0 0 0 10px;">
-            <img src="${rightLogo}" alt="Logo Sekolah" style="width: ${rightSize}px; max-height: ${rightSize}px; object-fit: contain; display: block; margin: 0 auto;" />
+            <img src="${rightLogo}" alt="Logo Sekolah Kanan" style="width: ${rightSize}px; max-height: ${rightSize}px; object-fit: contain; display: block; margin: 0 auto;" />
           </td>
-          ` : ''}
+          ` : `
+          <td style="width: ${leftSize}px; border: none; padding: 0;"></td>
+          `}
         </tr>
       </tbody>
     </table>
     <div style="border-bottom: 2.5px solid #000; margin-top: 6px;"></div>
     <div style="border-bottom: 1px solid #000; margin-top: 1.5px;"></div>
-  </div>`;
+  </div>
+  <!-- KOP_SURAT_END -->`;
 }
 
 // Generate Official Signatures Block (Pengesahan Kepala Sekolah & Guru)
@@ -102,9 +114,9 @@ export function generateSignatureBlockHtml(config?: Partial<KopConfig>, schoolFa
   const teacherName = c.teacherName || 'Budi Santoso, S.Pd.SD';
   const teacherNip = c.teacherNip || '19850412 201001 1 014';
 
-  return `
+  return `<!-- SIGNATURE_BLOCK_START -->
   <div class="mt-8 pt-4 signature-section" style="page-break-inside: avoid; break-inside: avoid; border-top: 1px solid #cbd5e1; font-family: 'Times New Roman', 'Liberation Serif', serif; font-size: 10pt; color: #000;">
-    <table style="width: 100%; border-collapse: collapse; border: none;">
+    <table class="signature-table" style="width: 100%; border-collapse: collapse; border: none;">
       <tbody>
         <tr>
           <td style="width: 48%; text-align: center; vertical-align: top; border: none; padding: 4px;">
@@ -114,7 +126,7 @@ export function generateSignatureBlockHtml(config?: Partial<KopConfig>, schoolFa
             <p style="margin: 0; font-weight: bold; text-decoration: underline;">${headName}</p>
             <p style="margin: 2px 0 0 0; font-size: 9pt; color: #475569;">NIP. ${headNip}</p>
           </td>
-          <td style="width: 4%;"></td>
+          <td style="width: 4%; border: none;"></td>
           <td style="width: 48%; text-align: center; vertical-align: top; border: none; padding: 4px;">
             <p style="margin: 0; font-size: 9.5pt;">${place}, ${dateStr}</p>
             <p style="margin: 2px 0 0 0; font-weight: bold;">${teacherTitle}</p>
@@ -125,7 +137,44 @@ export function generateSignatureBlockHtml(config?: Partial<KopConfig>, schoolFa
         </tr>
       </tbody>
     </table>
-  </div>`;
+  </div>
+  <!-- SIGNATURE_BLOCK_END -->`;
+}
+
+// Dynamically refresh or synchronize KOP and Signatures inside existing document HTML
+export function updateDocumentKopAndSignature(
+  html: string,
+  newKopConfig: KopConfig,
+  schoolName?: string
+): string {
+  if (!html) return html;
+  const newKopHtml = generateKopSuratHtml(newKopConfig, schoolName);
+  const newSignatureHtml = generateSignatureBlockHtml(newKopConfig, schoolName);
+
+  let updated = html;
+  // Replace KOP if markers exist
+  if (updated.includes('<!-- KOP_SURAT_START -->')) {
+    updated = updated.replace(
+      /<!-- KOP_SURAT_START -->[\s\S]*?<!-- KOP_SURAT_END -->/,
+      newKopHtml
+    );
+  } else if (updated.includes('kop-surat-official')) {
+    // Fallback: replace kop-surat-official element
+    updated = updated.replace(
+      /<div class="kop-surat-official[\s\S]*?<\/table>[\s\S]*?<\/div>\s*<\/div>/i,
+      newKopHtml
+    );
+  }
+
+  // Replace signature if markers exist
+  if (updated.includes('<!-- SIGNATURE_BLOCK_START -->')) {
+    updated = updated.replace(
+      /<!-- SIGNATURE_BLOCK_START -->[\s\S]*?<!-- SIGNATURE_BLOCK_END -->/,
+      newSignatureHtml
+    );
+  }
+
+  return updated;
 }
 
 export const DPL8_LABELS: Record<string, string> = {

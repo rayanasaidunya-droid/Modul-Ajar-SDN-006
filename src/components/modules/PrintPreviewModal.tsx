@@ -34,13 +34,20 @@ export const PrintPreviewModal: React.FC = () => {
   // Local kopConfig state initialized with profile preferences or module details
   const [kopConfig, setKopConfig] = useState<KopConfig>(() => {
     const base = userProfile.kopConfig || initialKopConfig;
+    const moduleKop = printModule?.kopConfig;
     return {
       ...base,
-      schoolName: base.schoolName || printModule?.school || userProfile.school,
-      headmasterName: base.headmasterName || printModule?.headmaster || userProfile.headmasterName,
-      headmasterNip: base.headmasterNip || printModule?.nipHeadmaster || userProfile.headmasterNip,
-      teacherName: printModule?.author || base.teacherName || userProfile.name,
-      teacherNip: printModule?.nipAuthor || base.teacherNip || userProfile.nip,
+      ...(moduleKop || {}),
+      schoolName: moduleKop?.schoolName || base.schoolName || printModule?.school || userProfile.school,
+      headmasterName: moduleKop?.headmasterName || base.headmasterName || printModule?.headmaster || userProfile.headmasterName,
+      headmasterNip: moduleKop?.headmasterNip || base.headmasterNip || printModule?.nipHeadmaster || userProfile.headmasterNip,
+      teacherName: moduleKop?.teacherName || printModule?.author || base.teacherName || userProfile.name,
+      teacherNip: moduleKop?.teacherNip || printModule?.nipAuthor || base.teacherNip || userProfile.nip,
+      // Left and right logos from school profile settings always take priority
+      leftLogoUrl: userProfile.kopConfig?.leftLogoUrl !== undefined ? userProfile.kopConfig.leftLogoUrl : (moduleKop?.leftLogoUrl || initialKopConfig.leftLogoUrl),
+      rightLogoUrl: userProfile.kopConfig?.rightLogoUrl !== undefined ? userProfile.kopConfig.rightLogoUrl : (moduleKop?.rightLogoUrl || initialKopConfig.rightLogoUrl),
+      leftLogoSize: userProfile.kopConfig?.leftLogoSize || moduleKop?.leftLogoSize || initialKopConfig.leftLogoSize,
+      rightLogoSize: userProfile.kopConfig?.rightLogoSize || moduleKop?.rightLogoSize || initialKopConfig.rightLogoSize,
     };
   });
 
@@ -48,13 +55,19 @@ export const PrintPreviewModal: React.FC = () => {
   useEffect(() => {
     if (printModule) {
       const base = userProfile.kopConfig || initialKopConfig;
+      const moduleKop = printModule.kopConfig;
       setKopConfig({
         ...base,
-        schoolName: base.schoolName || printModule.school || userProfile.school,
-        headmasterName: base.headmasterName || printModule.headmaster || userProfile.headmasterName,
-        headmasterNip: base.headmasterNip || printModule.nipHeadmaster || userProfile.headmasterNip,
-        teacherName: printModule.author || base.teacherName || userProfile.name,
-        teacherNip: printModule.nipAuthor || base.teacherNip || userProfile.nip,
+        ...(moduleKop || {}),
+        schoolName: moduleKop?.schoolName || base.schoolName || printModule.school || userProfile.school,
+        headmasterName: moduleKop?.headmasterName || base.headmasterName || printModule.headmaster || userProfile.headmasterName,
+        headmasterNip: moduleKop?.headmasterNip || base.headmasterNip || printModule.nipHeadmaster || userProfile.headmasterNip,
+        teacherName: moduleKop?.teacherName || printModule.author || base.teacherName || userProfile.name,
+        teacherNip: moduleKop?.teacherNip || printModule.nipAuthor || base.teacherNip || userProfile.nip,
+        leftLogoUrl: userProfile.kopConfig?.leftLogoUrl !== undefined ? userProfile.kopConfig.leftLogoUrl : (moduleKop?.leftLogoUrl || initialKopConfig.leftLogoUrl),
+        rightLogoUrl: userProfile.kopConfig?.rightLogoUrl !== undefined ? userProfile.kopConfig.rightLogoUrl : (moduleKop?.rightLogoUrl || initialKopConfig.rightLogoUrl),
+        leftLogoSize: userProfile.kopConfig?.leftLogoSize || moduleKop?.leftLogoSize || initialKopConfig.leftLogoSize,
+        rightLogoSize: userProfile.kopConfig?.rightLogoSize || moduleKop?.rightLogoSize || initialKopConfig.rightLogoSize,
       });
     }
   }, [printModule, userProfile]);

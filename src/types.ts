@@ -72,6 +72,7 @@ export interface TeachingModule {
   school: string;
   headmaster?: string;
   nipHeadmaster?: string;
+  kopConfig?: KopConfig;
   status: StatusType;
   allocatedHours: string;
   jumlahPertemuan?: number;

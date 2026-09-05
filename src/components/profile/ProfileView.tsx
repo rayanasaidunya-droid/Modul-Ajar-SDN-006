@@ -126,11 +126,16 @@ export const ProfileView: React.FC = () => {
   };
 
   // Sync derived values into kopConfig preview continuously
+  const buildCleanContact = (rawContact: string, rawNpsn: string) => {
+    if (rawContact.includes('NPSN:')) return rawContact;
+    return rawNpsn ? `NPSN: ${rawNpsn} • ${rawContact}` : rawContact;
+  };
+
   const currentMergedKop: KopConfig = {
     ...kopConfig,
     schoolName: school,
     schoolAddress: schoolAddress,
-    schoolContact: `NPSN: ${npsn || '-'} • ${schoolContact}`,
+    schoolContact: buildCleanContact(schoolContact, npsn),
     signaturePlace: city,
     headmasterName: headmasterName,
     headmasterNip: headmasterNip,
@@ -163,7 +168,7 @@ export const ProfileView: React.FC = () => {
       ...kopConfig,
       schoolName: school,
       schoolAddress: schoolAddress,
-      schoolContact: `NPSN: ${npsn || '-'} • ${schoolContact}`,
+      schoolContact: buildCleanContact(schoolContact, npsn),
       signaturePlace: city,
       headmasterName: headmasterName,
       headmasterNip: headmasterNip,

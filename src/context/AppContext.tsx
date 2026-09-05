@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TeachingModule, UserProfile, ModuleType, SubjectType, FaseType, KopConfig, SettingsBackupPayload, BackupSnapshot } from '../types';
 import { initialModules, initialUserProfile, initialKopConfig } from '../data/mockData';
+import { DEFAULT_TUT_WURI_LOGO, DEFAULT_SCHOOL_LOGO } from '../data/defaultLogos';
 
 interface ToastInfo {
   id: string;
@@ -84,12 +85,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY_PROFILE);
       if (saved) {
         const parsed = JSON.parse(saved);
+        const rawKop = parsed.kopConfig || {};
+        // Auto-migrate old broken unencoded SVG strings if present
+        const leftLogo =
+          !rawKop.leftLogoUrl || rawKop.leftLogoUrl.startsWith('data:image/svg+xml;utf8')
+            ? DEFAULT_TUT_WURI_LOGO
+            : rawKop.leftLogoUrl;
+        const rightLogo =
+          !rawKop.rightLogoUrl || rawKop.rightLogoUrl.startsWith('data:image/svg+xml;utf8')
+            ? DEFAULT_SCHOOL_LOGO
+            : rawKop.rightLogoUrl;
+
         return {
           ...initialUserProfile,
           ...parsed,
           kopConfig: {
             ...initialKopConfig,
-            ...(parsed.kopConfig || {}),
+            ...rawKop,
+            leftLogoUrl: leftLogo,
+            rightLogoUrl: rightLogo,
           },
         };
       }

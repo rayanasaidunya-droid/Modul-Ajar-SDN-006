@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Sparkles,
@@ -45,6 +45,7 @@ import {
   generateProsemHtml,
   generateKopSuratHtml,
   generateSignatureBlockHtml,
+  updateDocumentKopAndSignature,
   DPL8_LABELS,
   KBC_TEMA_LABELS,
   SES_LABELS,
@@ -136,6 +137,41 @@ export const ModuleGeneratorWizard: React.FC = () => {
     prosemHtml: string;
   } | null>(null);
 
+  // Synchronize active preview and generatedModule whenever user updates KOP or logos in Profile Settings
+  useEffect(() => {
+    if (!generatedHtmls || !userProfile.kopConfig) return;
+    const currentKop = userProfile.kopConfig;
+    const schoolName = currentKop.schoolName || userProfile.school || 'SD NEGERI 01 MENTENG JAYA';
+
+    setGeneratedHtmls(prev => {
+      if (!prev) return prev;
+      return {
+        modulHtml: updateDocumentKopAndSignature(prev.modulHtml, currentKop, schoolName),
+        lkpdHtml: updateDocumentKopAndSignature(prev.lkpdHtml, currentKop, schoolName),
+        bahanAjarHtml: updateDocumentKopAndSignature(prev.bahanAjarHtml, currentKop, schoolName),
+        silabusHtml: updateDocumentKopAndSignature(prev.silabusHtml, currentKop, schoolName),
+        protaHtml: updateDocumentKopAndSignature(prev.protaHtml, currentKop, schoolName),
+        prosemHtml: updateDocumentKopAndSignature(prev.prosemHtml, currentKop, schoolName),
+      };
+    });
+
+    setGeneratedModule(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        kopConfig: {
+          ...(prev.kopConfig || {}),
+          ...currentKop,
+        },
+        school: currentKop.schoolName || prev.school,
+        headmaster: currentKop.headmasterName || prev.headmaster,
+        nipHeadmaster: currentKop.headmasterNip || prev.nipHeadmaster,
+        author: currentKop.teacherName || prev.author,
+        nipAuthor: currentKop.teacherNip || prev.nipAuthor,
+      };
+    });
+  }, [userProfile.kopConfig]);
+
   // Dynamic Fase calculation based on Kelas & Satuan
   const handleKelasChange = (newKelas: string) => {
     setKelas(newKelas);
@@ -209,10 +245,16 @@ export const ModuleGeneratorWizard: React.FC = () => {
     const effectiveKopConfig: KopConfig = {
       ...(userProfile.kopConfig || initialKopConfig),
       schoolName: userProfile.kopConfig?.schoolName || userProfile.school || 'SD NEGERI 01 MENTENG JAYA',
+      schoolAddress: userProfile.kopConfig?.schoolAddress || (userProfile as any).schoolAddress || 'Jl. Menteng Raya No. 10, RT.01/RW.02, Kec. Menteng, Kota Jakarta Pusat 10340',
+      schoolContact: userProfile.kopConfig?.schoolContact || '',
       headmasterName: userProfile.kopConfig?.headmasterName || userProfile.headmasterName || 'Dra. Hj. Siti Rohmah, M.Pd.',
       headmasterNip: userProfile.kopConfig?.headmasterNip || userProfile.headmasterNip || '',
       teacherName: userProfile.kopConfig?.teacherName || userProfile.name || 'Guru Pengampu, S.Pd.',
       teacherNip: userProfile.kopConfig?.teacherNip || userProfile.nip || '',
+      leftLogoUrl: userProfile.kopConfig?.leftLogoUrl !== undefined ? userProfile.kopConfig.leftLogoUrl : initialKopConfig.leftLogoUrl,
+      rightLogoUrl: userProfile.kopConfig?.rightLogoUrl !== undefined ? userProfile.kopConfig.rightLogoUrl : initialKopConfig.rightLogoUrl,
+      leftLogoSize: userProfile.kopConfig?.leftLogoSize || initialKopConfig.leftLogoSize || 70,
+      rightLogoSize: userProfile.kopConfig?.rightLogoSize || initialKopConfig.rightLogoSize || 70,
     };
 
     const inputData = {
@@ -318,11 +360,12 @@ export const ModuleGeneratorWizard: React.FC = () => {
       subject: effectiveMapel,
       semester,
       academicYear: tahunAjaran,
-      author: userProfile.name || 'Guru Pengampu',
-      nipAuthor: userProfile.nip || '',
-      school: userProfile.school || 'SD Negeri 006',
-      headmaster: userProfile.headmasterName || 'Kepala Sekolah, M.Pd.',
-      nipHeadmaster: userProfile.headmasterNip || '',
+      author: effectiveKopConfig.teacherName || userProfile.name || 'Guru Pengampu',
+      nipAuthor: effectiveKopConfig.teacherNip || userProfile.nip || '',
+      school: effectiveKopConfig.schoolName || userProfile.school || 'SD Negeri 01 Menteng Jaya',
+      headmaster: effectiveKopConfig.headmasterName || userProfile.headmasterName || 'Kepala Sekolah, M.Pd.',
+      nipHeadmaster: effectiveKopConfig.headmasterNip || userProfile.headmasterNip || '',
+      kopConfig: effectiveKopConfig,
       status: 'Terverifikasi',
       allocatedHours: `${jumlahPertemuan} Pertemuan (${jumlahPertemuan * jpPerPertemuan} JP)`,
       jumlahPertemuan,

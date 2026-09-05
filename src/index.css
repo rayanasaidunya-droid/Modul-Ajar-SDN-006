@@ -84,13 +84,13 @@
   }
 
   /* Tables formatting in print */
-  table {
+  table:not(.kop-table):not(.no-border) {
     width: 100% !important;
     border-collapse: collapse !important;
     page-break-inside: auto !important;
   }
 
-  tr {
+  table:not(.kop-table):not(.no-border) tr {
     page-break-inside: avoid !important;
     page-break-after: auto !important;
   }
@@ -99,9 +99,23 @@
     display: table-header-group !important;
   }
 
-  th, td {
+  table:not(.kop-table):not(.no-border) th,
+  table:not(.kop-table):not(.no-border) td {
     border: 1px solid #475569 !important;
     color: #000000 !important;
+  }
+
+  /* Clear borders explicitly for KOP and signature tables */
+  .kop-surat-official table,
+  .kop-surat-official td,
+  .kop-table,
+  .kop-table td,
+  .signature-section table,
+  .signature-section td,
+  .no-border,
+  .no-border td {
+    border: none !important;
+    border-color: transparent !important;
   }
 
   /* Avoid page breaks inside Kop and signatures */
