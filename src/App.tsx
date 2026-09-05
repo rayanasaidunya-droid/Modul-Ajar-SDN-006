@@ -13,6 +13,7 @@ import { DatabaseBackupRestoreModal } from './components/profile/DatabaseBackupR
 import { DashboardView } from './components/dashboard/DashboardView';
 import { ModuleCatalog } from './components/modules/ModuleCatalog';
 import { ModuleGeneratorWizard } from './components/generator/ModuleGeneratorWizard';
+import { QuestionGeneratorView } from './components/quiz/QuestionGeneratorView';
 import { CurriculumGuideView } from './components/curriculum/CurriculumGuideView';
 import { AssessmentBankView } from './components/assessment/AssessmentBankView';
 import { ProtaPromesView } from './components/protapromes/ProtaPromesView';
@@ -30,10 +31,14 @@ const MainLayout: React.FC = () => {
         return <ModuleCatalog />;
       case 'generator':
         return <ModuleGeneratorWizard />;
+      case 'buat-soal':
+      case 'question-generator':
+        return <QuestionGeneratorView />;
       case 'curriculum':
         return <CurriculumGuideView />;
       case 'assessment':
         return <AssessmentBankView />;
+      case 'prota-promes':
       case 'protapromes':
         return <ProtaPromesView />;
       case 'profile':

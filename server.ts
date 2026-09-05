@@ -140,6 +140,119 @@ Keluarkan HANYA kode HTML bersih (tanpa bungkus markdown \`\`\`html).`;
   }
 });
 
+// Server-side AI Question Generator Endpoint
+app.post('/api/generate-questions', async (req, res) => {
+  try {
+    const {
+      subject = 'IPAS',
+      grade = '4',
+      fase = 'Fase B',
+      tp = '',
+      topic = '',
+      questionCount = 10,
+      questionType = 'Pilihan Ganda',
+      cognitiveLevel = 'HOTS (C4-C6)',
+      semester = 1,
+      academicYear = '2024/2025'
+    } = req.body;
+
+    const count = Math.max(1, Math.min(40, Number(questionCount) || 10));
+    const ai = getGemini();
+
+    if (ai) {
+      const prompt = `Anda adalah Pengembang Soal & Asesmen Standar Kemendikdasmen RI untuk jenjang Sekolah Dasar.
+Tugas Anda: Susun PERSIS ${count} BUTIR SOAL yang kontekstual, mendalam, dan berkualitas tinggi.
+
+PARAMETER ASESMEN:
+- Mata Pelajaran: ${subject}
+- Kelas: Kelas ${grade} (${fase})
+- Semester: Semester ${semester} (Tahun Ajaran ${academicYear})
+- Tujuan Pembelajaran (TP): ${tp || 'Mendalami materi esensial secara menyeluruh'}
+- Topik / Materi Pokok: ${topic || tp || subject}
+- Bentuk Soal: ${questionType} (Jika 'Campuran', buatlah proporsi PG 60%, Isian Singkat 25%, Uraian 15%)
+- Target Level Kognitif: ${cognitiveLevel}
+
+PEDOMAN PENYUSUNAN SOAL:
+1. Berikan stimulus kontekstual berupa cerita singkat, fenomena sehari-hari, data sederhana, atau eksperimen mini pada soal.
+2. Kalimat soal harus jelas, tidak ambigu, dan mendidik nalar kritis.
+3. KUNCI JAWABAN harus tepat, logis, dan menyertakan pembahasan detail serta indikator soal.
+4. Format respon WAJIB berupa JSON Array murni (HANYA teks JSON valid dimulai dengan [ dan diakhiri dengan ]), TANPA backticks markdown dan TANPA kata pengantar.
+
+Format setiap objek dalam JSON array:
+[
+  {
+    "number": 1,
+    "type": "${questionType === 'Campuran' ? 'Pilihan Ganda' : questionType}",
+    "stimulus": "Teks pengantar atau kasus cerita...",
+    "question": "Pertanyaan inti...",
+    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+    "correctAnswer": "B. ...",
+    "discussion": "Penjelasan detail kunci jawaban dan konsep ilmiahnya...",
+    "cognitiveLevel": "C3",
+    "indicator": "Disajikan ..., peserta didik dapat ...",
+    "score": 1
+  }
+]`;
+
+      const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+
+      for (const modelName of candidateModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt
+          });
+          if (response?.text) {
+            const rawText = response.text
+              .replace(/```json/gi, '')
+              .replace(/```/g, '')
+              .trim();
+            const parsed = JSON.parse(rawText);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const formattedQuestions = parsed.map((item: any, idx: number) => ({
+                id: `ai-q-${idx + 1}`,
+                number: idx + 1,
+                type: item.type || (questionType === 'Campuran' ? 'Pilihan Ganda' : questionType),
+                stimulus: item.stimulus || '',
+                question: item.question || `Pertanyaan nomor ${idx + 1}`,
+                options: Array.isArray(item.options) ? item.options : [],
+                correctAnswer: item.correctAnswer || item.answer || 'Kunci terlampir',
+                discussion: item.discussion || item.explanation || 'Pembahasan materi terkait konsep esensial.',
+                cognitiveLevel: item.cognitiveLevel || (idx % 2 === 0 ? 'C4' : 'C3'),
+                indicator: item.indicator || `Mengukur pemahaman konsep ${topic || subject}`,
+                score: item.score || (item.type === 'Uraian' ? 5 : item.type === 'Isian Singkat' ? 2 : 1)
+              }));
+
+              return res.json({
+                success: true,
+                hasAi: true,
+                questions: formattedQuestions.slice(0, count)
+              });
+            }
+          }
+        } catch {
+          await new Promise((r) => setTimeout(r, 400));
+        }
+      }
+    }
+
+    // If Gemini offline or not configured, return signal to use local generator
+    res.json({
+      success: true,
+      hasAi: false,
+      questions: null,
+      message: 'Using offline curriculum generator engine'
+    });
+  } catch (error: any) {
+    res.json({
+      success: true,
+      hasAi: false,
+      questions: null,
+      message: error?.message || 'Fallback to client'
+    });
+  }
+});
+
 // Setup Vite development server or production static serving
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {

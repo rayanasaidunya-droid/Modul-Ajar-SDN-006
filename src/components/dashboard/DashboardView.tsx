@@ -13,7 +13,8 @@ import {
   Plus,
   Compass,
   FileCheck,
-  GraduationCap
+  GraduationCap,
+  FileQuestion
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
@@ -127,6 +128,15 @@ export const DashboardView: React.FC = () => {
             >
               <Sparkles className="w-4 h-4 text-[#FF7300]" />
               <span>Generator AI</span>
+            </button>
+
+            <button
+              id="btn-banner-quiz"
+              onClick={() => setCurrentView('buat-soal')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/80 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold shadow-md transition active:scale-95"
+            >
+              <FileQuestion className="w-4 h-4 text-emerald-100" />
+              <span>Buat Soal AI</span>
             </button>
 
             <button

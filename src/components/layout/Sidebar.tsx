@@ -11,7 +11,8 @@ import {
   GraduationCap,
   ChevronRight,
   School,
-  ExternalLink
+  ExternalLink,
+  FileQuestion
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -44,6 +45,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       badge: 'PRO',
       badgeColor: 'bg-[#FF7300] text-white',
       description: 'Susun Modul 1-Klik',
+    },
+    {
+      id: 'buat-soal',
+      label: 'Buat Soal AI',
+      icon: FileQuestion,
+      badge: 'BARU',
+      badgeColor: 'bg-emerald-500 text-white',
+      description: 'Naskah, Kisi-Kisi & Cetak',
     },
     {
       id: 'curriculum',

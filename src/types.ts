@@ -194,6 +194,50 @@ export interface SettingsBackupPayload {
   };
 }
 
+export type QuestionType =
+  | 'Pilihan Ganda'
+  | 'Pilihan Ganda Kompleks'
+  | 'Isian Singkat'
+  | 'Uraian'
+  | 'Menjodohkan'
+  | 'Benar/Salah'
+  | 'Campuran';
+
+export type CognitiveLevel = 'LOTS (C1-C2)' | 'MOTS (C3)' | 'HOTS (C4-C6)' | 'Proporsional (Campuran)';
+
+export interface QuestionItem {
+  id: string;
+  number: number;
+  type: 'Pilihan Ganda' | 'Pilihan Ganda Kompleks' | 'Isian Singkat' | 'Uraian' | 'Menjodohkan' | 'Benar/Salah';
+  question: string;
+  stimulus?: string;
+  options?: string[]; // e.g. ["A. ...", "B. ...", "C. ...", "D. ..."]
+  correctAnswer: string;
+  discussion: string;
+  cognitiveLevel: 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'HOTS' | 'MOTS' | 'LOTS';
+  indicator: string;
+  score: number;
+}
+
+export interface GeneratedExam {
+  id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  fase: string;
+  semester: number;
+  academicYear: string;
+  tp: string;
+  topic: string;
+  questionType: QuestionType;
+  questionCount: number;
+  cognitiveLevel: string;
+  durationMinutes: number;
+  kopConfig: KopConfig;
+  questions: QuestionItem[];
+  createdAt: string;
+}
+
 export interface BackupSnapshot {
   id: string;
   name: string;
