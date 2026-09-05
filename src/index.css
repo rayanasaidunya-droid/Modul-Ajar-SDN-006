@@ -1,22 +1,59 @@
 @import "tailwindcss";
 
 @media print {
+  @page {
+    size: A4;
+    margin: 12mm 15mm;
+  }
+
   body {
     background-color: #ffffff !important;
     color: #000000 !important;
+    font-size: 11pt !important;
   }
 
-  /* Hide everything except the print document paper */
+  /* Hide app chrome, sidebars, headers, and buttons */
   #sidebar-navigation,
   #topbar-navigation,
   #btn-close-detail-modal,
   .no-print,
   #print-controls-bar,
   #print-settings-drawer,
+  #module-generator-wizard-header,
+  #module-generator-stepper,
+  #generator-top-actions,
+  #generator-tabs-bar,
+  #generator-footer-bar,
   button,
   nav,
-  header {
+  header,
+  aside {
     display: none !important;
+  }
+
+  /* Reset layout containers so only document content is printed cleanly */
+  #module-generator-wizard,
+  #module-generator-container,
+  #printable-generated-content-wrapper {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    max-height: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  #printable-generated-content {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
   }
 
   #print-preview-overlay {
@@ -38,7 +75,7 @@
   #print-document-paper {
     border: none !important;
     box-shadow: none !important;
-    padding: 8mm 12mm !important;
+    padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -46,10 +83,42 @@
     color: #000000 !important;
   }
 
-  /* Ensure images in KOP and signatures print in full crisp fidelity */
+  /* Tables formatting in print */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  th, td {
+    border: 1px solid #475569 !important;
+    color: #000000 !important;
+  }
+
+  /* Avoid page breaks inside Kop and signatures */
+  .page-break-inside-avoid,
+  .kop-surat-official,
+  .signature-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Ensure crisp images in KOP and signatures */
+  img,
+  #printable-generated-content img,
   #print-document-paper img {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     display: block !important;
   }
 }
+

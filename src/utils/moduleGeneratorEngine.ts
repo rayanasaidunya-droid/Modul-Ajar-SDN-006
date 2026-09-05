@@ -5,8 +5,11 @@ import {
   SatuanPendidikan,
   FaseType,
   SubjectType,
-  SupplementaryDocuments
+  SupplementaryDocuments,
+  KopConfig
 } from '../types';
+import { DEFAULT_TUT_WURI_LOGO, DEFAULT_SCHOOL_LOGO } from '../data/defaultLogos';
+import { initialKopConfig } from '../data/mockData';
 
 export interface ModuleGenerationInput {
   satuanPendidikan: SatuanPendidikan;
@@ -35,6 +38,94 @@ export interface ModuleGenerationInput {
   learningModel: string;
   selectedMetode: string[];
   kekhususanABK?: string;
+  kopConfig?: KopConfig;
+}
+
+// Generate Official Indonesian School Letterhead (KOP SURAT RESMI)
+export function generateKopSuratHtml(config?: Partial<KopConfig>, schoolFallback?: string): string {
+  const c = { ...initialKopConfig, ...(config || {}) };
+  if (c.showKop === false) return '';
+
+  const school = c.schoolName || schoolFallback || 'SD NEGERI 01 MENTENG JAYA';
+  const gov = c.governmentHeader || 'PEMERINTAH PROVINSI DKI JAKARTA';
+  const dept = c.departmentHeader || 'DINAS PENDIDIKAN DAN KEBUDAYAAN';
+  const addr = c.schoolAddress || 'Jl. Menteng Raya No. 10, RT.01/RW.02, Kec. Menteng, Kota Jakarta Pusat 10340';
+  const contact = c.schoolContact || 'Telp: (021) 3192849 • Posel: sdn01menteng@sekolah.belajar.id';
+  const leftLogo = c.leftLogoUrl || DEFAULT_TUT_WURI_LOGO;
+  const rightLogo = c.rightLogoUrl || DEFAULT_SCHOOL_LOGO;
+  const leftSize = c.leftLogoSize || 70;
+  const rightSize = c.rightLogoSize || 70;
+
+  return `
+  <div class="kop-surat-official pb-3 mb-6" style="border-bottom: 3px double #000000; font-family: 'Times New Roman', 'Liberation Serif', serif; color: #000000; width: 100%;">
+    <table style="width: 100%; border-collapse: collapse; border: none; margin: 0; padding: 0;">
+      <tbody>
+        <tr>
+          ${leftLogo ? `
+          <td style="width: ${leftSize}px; text-align: center; vertical-align: middle; border: none; padding: 0 10px 0 0;">
+            <img src="${leftLogo}" alt="Logo Instansi" style="width: ${leftSize}px; max-height: ${leftSize}px; object-fit: contain; display: block; margin: 0 auto;" />
+          </td>
+          ` : ''}
+          <td style="text-align: center; vertical-align: middle; border: none; padding: 0 8px;">
+            ${gov ? `<div style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.25; color: #111;">${gov}</div>` : ''}
+            ${dept ? `<div style="font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.25; margin-top: 1px; color: #111;">${dept}</div>` : ''}
+            <div style="font-size: 14pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.25; margin-top: 3px; color: #000;">${school}</div>
+            ${addr ? `<div style="font-size: 9pt; font-family: Arial, sans-serif; line-height: 1.3; margin-top: 2px; color: #333;">${addr}</div>` : ''}
+            ${contact ? `<div style="font-size: 8.5pt; font-family: Arial, sans-serif; line-height: 1.3; margin-top: 1px; color: #444;">${contact}</div>` : ''}
+          </td>
+          ${rightLogo ? `
+          <td style="width: ${rightSize}px; text-align: center; vertical-align: middle; border: none; padding: 0 0 0 10px;">
+            <img src="${rightLogo}" alt="Logo Sekolah" style="width: ${rightSize}px; max-height: ${rightSize}px; object-fit: contain; display: block; margin: 0 auto;" />
+          </td>
+          ` : ''}
+        </tr>
+      </tbody>
+    </table>
+    <div style="border-bottom: 2.5px solid #000; margin-top: 6px;"></div>
+    <div style="border-bottom: 1px solid #000; margin-top: 1.5px;"></div>
+  </div>`;
+}
+
+// Generate Official Signatures Block (Pengesahan Kepala Sekolah & Guru)
+export function generateSignatureBlockHtml(config?: Partial<KopConfig>, schoolFallback?: string): string {
+  const c = { ...initialKopConfig, ...(config || {}) };
+  if (c.showSignature === false) return '';
+
+  const school = c.schoolName || schoolFallback || 'SD Negeri';
+  const today = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(new Date());
+  const place = c.signaturePlace || 'Jakarta Pusat';
+  const dateStr = c.signatureDate || today;
+  const headTitle = c.headmasterTitle || `Kepala ${school}`;
+  const headName = c.headmasterName || 'Dra. Hj. Siti Rohmah, M.Pd.';
+  const headNip = c.headmasterNip || '19720315 199603 2 003';
+  const teacherTitle = c.teacherTitle || 'Guru Kelas / Penyusun Modul';
+  const teacherName = c.teacherName || 'Budi Santoso, S.Pd.SD';
+  const teacherNip = c.teacherNip || '19850412 201001 1 014';
+
+  return `
+  <div class="mt-8 pt-4 signature-section" style="page-break-inside: avoid; break-inside: avoid; border-top: 1px solid #cbd5e1; font-family: 'Times New Roman', 'Liberation Serif', serif; font-size: 10pt; color: #000;">
+    <table style="width: 100%; border-collapse: collapse; border: none;">
+      <tbody>
+        <tr>
+          <td style="width: 48%; text-align: center; vertical-align: top; border: none; padding: 4px;">
+            <p style="margin: 0; font-size: 9.5pt;">Mengetahui,</p>
+            <p style="margin: 2px 0 0 0; font-weight: bold;">${headTitle}</p>
+            <div style="height: 64px;"></div>
+            <p style="margin: 0; font-weight: bold; text-decoration: underline;">${headName}</p>
+            <p style="margin: 2px 0 0 0; font-size: 9pt; color: #475569;">NIP. ${headNip}</p>
+          </td>
+          <td style="width: 4%;"></td>
+          <td style="width: 48%; text-align: center; vertical-align: top; border: none; padding: 4px;">
+            <p style="margin: 0; font-size: 9.5pt;">${place}, ${dateStr}</p>
+            <p style="margin: 2px 0 0 0; font-weight: bold;">${teacherTitle}</p>
+            <div style="height: 64px;"></div>
+            <p style="margin: 0; font-weight: bold; text-decoration: underline;">${teacherName}</p>
+            <p style="margin: 2px 0 0 0; font-size: 9pt; color: #475569;">NIP. ${teacherNip}</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
 }
 
 export const DPL8_LABELS: Record<string, string> = {
@@ -321,6 +412,9 @@ export function generateModuleHtml(input: ModuleGenerationInput): string {
   return `
   <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900 space-y-6 max-w-4xl mx-auto font-sans leading-relaxed">
     
+    <!-- KOP SURAT RESMI -->
+    ${generateKopSuratHtml(input.kopConfig, input.namaSekolah)}
+
     <!-- HEADER RESMI -->
     <div class="text-center pb-4 border-b-2 border-slate-800">
       <h2 class="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-900">${docTitle}</h2>
@@ -512,25 +606,8 @@ export function generateModuleHtml(input: ModuleGenerationInput): string {
       </div>
     </div>
 
-    <!-- BAGIAN 9: TANDA TANGAN RESMI -->
-    <div class="pt-6 border-t-2 border-slate-300 mt-8">
-      <div class="flex justify-between text-xs text-slate-800">
-        <div class="text-center w-60">
-          <p>Mengetahui,</p>
-          <p class="font-bold">Kepala ${namaSekolah}</p>
-          <div class="h-20"></div>
-          <p class="font-bold underline">${namaKepalaSekolah}</p>
-          <p class="text-slate-500">NIP. ${nipKepalaSekolah || '....................................'}</p>
-        </div>
-        <div class="text-center w-60">
-          <p>Kota, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          <p class="font-bold">Guru Mata Pelajaran</p>
-          <div class="h-20"></div>
-          <p class="font-bold underline">${namaPenyusun}</p>
-          <p class="text-slate-500">NIP. ${nipPenyusun || '....................................'}</p>
-        </div>
-      </div>
-    </div>
+    <!-- BAGIAN 9: PENGESAHAN TANDA TANGAN RESMI -->
+    ${generateSignatureBlockHtml(input.kopConfig, input.namaSekolah)}
 
   </div>`;
 }
@@ -615,13 +692,19 @@ export function generateLKPDHtml(input: ModuleGenerationInput): string {
 
   return `
   <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900 space-y-6 max-w-4xl mx-auto font-sans leading-relaxed">
+    <!-- KOP SURAT RESMI -->
+    ${generateKopSuratHtml(input.kopConfig, input.namaSekolah)}
+
     <div class="text-center pb-4 border-b-2 border-slate-800">
-      <h2 class="text-xl sm:text-2xl font-black uppercase text-slate-900">KUMPULAN LEMBAR KERJA PESERTA DIDIK (LKPD)</h2>
+      <h2 class="text-xl sm:text-2xl font-black uppercase text-slate-900">LEMBAR KERJA PESERTA DIDIK (LKPD)</h2>
       <p class="text-xs font-semibold text-slate-600 mt-1">${namaSekolah} • Mata Pelajaran: ${mapel} (${fase} / Kelas ${kelas})</p>
       <p class="text-sm font-extrabold text-blue-700 mt-1">Topik: ${topic}</p>
     </div>
 
     ${lkpdSections}
+
+    <!-- PENGESAHAN TANDA TANGAN -->
+    ${generateSignatureBlockHtml(input.kopConfig, input.namaSekolah)}
   </div>`;
 }
 
@@ -631,6 +714,9 @@ export function generateBahanAjarHtml(input: ModuleGenerationInput): string {
 
   return `
   <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900 space-y-6 max-w-4xl mx-auto font-sans leading-relaxed">
+    <!-- KOP SURAT RESMI -->
+    ${generateKopSuratHtml(input.kopConfig, input.namaSekolah)}
+
     <div class="text-center pb-4 border-b-2 border-slate-800">
       <h2 class="text-xl sm:text-2xl font-black uppercase text-slate-900">BUKU PENDAMPING & BAHAN AJAR SISWA</h2>
       <p class="text-xs font-semibold text-slate-600 mt-1">${namaSekolah} • Kelas ${kelas} (${fase}) • ${mapel}</p>
@@ -707,6 +793,9 @@ export function generateBahanAjarHtml(input: ModuleGenerationInput): string {
         <div>• <strong>Integritas:</strong> Kesesuaian antara perkataan, niat baik, dan tindakan nyata.</div>
       </div>
     </div>
+
+    <!-- PENGESAHAN TANDA TANGAN -->
+    ${generateSignatureBlockHtml(input.kopConfig, input.namaSekolah)}
   </div>`;
 }
 
@@ -717,6 +806,9 @@ export function generateSilabusHtml(input: ModuleGenerationInput): string {
 
   return `
   <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900 space-y-6 max-w-4xl mx-auto font-sans leading-relaxed">
+    <!-- KOP SURAT RESMI -->
+    ${generateKopSuratHtml(input.kopConfig, input.namaSekolah)}
+
     <div class="text-center pb-4 border-b-2 border-slate-800">
       <h2 class="text-xl sm:text-2xl font-black uppercase text-slate-900">ALUR TUJUAN PEMBELAJARAN (ATP) / SILABUS SEMESTER</h2>
       <p class="text-xs font-semibold text-slate-600 mt-1">${namaSekolah} • Tahun Ajaran ${tahunAjaran} • Semester ${semester === 1 ? '1 (Ganjil)' : '2 (Genap)'}</p>
@@ -779,6 +871,9 @@ export function generateSilabusHtml(input: ModuleGenerationInput): string {
         </tbody>
       </table>
     </div>
+
+    <!-- PENGESAHAN TANDA TANGAN -->
+    ${generateSignatureBlockHtml(input.kopConfig, input.namaSekolah)}
   </div>`;
 }
 
@@ -788,6 +883,9 @@ export function generateProtaHtml(input: ModuleGenerationInput): string {
 
   return `
   <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900 space-y-6 max-w-4xl mx-auto font-sans leading-relaxed">
+    <!-- KOP SURAT RESMI -->
+    ${generateKopSuratHtml(input.kopConfig, input.namaSekolah)}
+
     <div class="text-center pb-4 border-b-2 border-slate-800">
       <h2 class="text-xl sm:text-2xl font-black uppercase text-slate-900">PROGRAM TAHUNAN (PROTA)</h2>
       <p class="text-xs font-semibold text-slate-600 mt-1">${namaSekolah} • Tahun Ajaran ${tahunAjaran}</p>
@@ -825,6 +923,9 @@ export function generateProtaHtml(input: ModuleGenerationInput): string {
         </tbody>
       </table>
     </div>
+
+    <!-- PENGESAHAN TANDA TANGAN -->
+    ${generateSignatureBlockHtml(input.kopConfig, input.namaSekolah)}
   </div>`;
 }
 
@@ -837,6 +938,9 @@ export function generateProsemHtml(input: ModuleGenerationInput): string {
 
   return `
   <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900 space-y-6 max-w-4xl mx-auto font-sans leading-relaxed">
+    <!-- KOP SURAT RESMI -->
+    ${generateKopSuratHtml(input.kopConfig, input.namaSekolah)}
+
     <div class="text-center pb-4 border-b-2 border-slate-800">
       <h2 class="text-xl sm:text-2xl font-black uppercase text-slate-900">PROGRAM SEMESTER (PROSEM)</h2>
       <p class="text-xs font-semibold text-slate-600 mt-1">${namaSekolah} • Tahun Ajaran ${tahunAjaran} • Semester ${semester === 1 ? '1 (Ganjil)' : '2 (Genap)'}</p>
@@ -883,5 +987,8 @@ export function generateProsemHtml(input: ModuleGenerationInput): string {
         </tbody>
       </table>
     </div>
+
+    <!-- PENGESAHAN TANDA TANGAN -->
+    ${generateSignatureBlockHtml(input.kopConfig, input.namaSekolah)}
   </div>`;
 }

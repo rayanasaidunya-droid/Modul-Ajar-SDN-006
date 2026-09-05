@@ -22,7 +22,8 @@ import {
   Info,
   Check,
   Building,
-  GraduationCap
+  GraduationCap,
+  Sliders
 } from 'lucide-react';
 import {
   TeachingModule,
@@ -31,8 +32,10 @@ import {
   SatuanPendidikan,
   FaseType,
   SubjectType,
-  SupplementaryDocuments
+  SupplementaryDocuments,
+  KopConfig
 } from '../../types';
+import { initialKopConfig } from '../../data/mockData';
 import {
   generateModuleHtml,
   generateLKPDHtml,
@@ -40,6 +43,8 @@ import {
   generateSilabusHtml,
   generateProtaHtml,
   generateProsemHtml,
+  generateKopSuratHtml,
+  generateSignatureBlockHtml,
   DPL8_LABELS,
   KBC_TEMA_LABELS,
   SES_LABELS,
@@ -47,7 +52,16 @@ import {
 } from '../../utils/moduleGeneratorEngine';
 
 export const ModuleGeneratorWizard: React.FC = () => {
-  const { setModules, showToast, userProfile, setSelectedModule, setIsDetailOpen, setCurrentView } = useApp();
+  const {
+    setModules,
+    showToast,
+    userProfile,
+    setSelectedModule,
+    setIsDetailOpen,
+    setCurrentView,
+    setPrintModule,
+    setIsPrintPreviewOpen
+  } = useApp();
 
   // Wizard Steps: 1 = Form Konfigurasi, 2 = Hasil Multi-Tab
   const [step, setStep] = useState<1 | 2>(1);
@@ -192,6 +206,15 @@ export const ModuleGeneratorWizard: React.FC = () => {
 
     setIsGenerating(true);
 
+    const effectiveKopConfig: KopConfig = {
+      ...(userProfile.kopConfig || initialKopConfig),
+      schoolName: userProfile.kopConfig?.schoolName || userProfile.school || 'SD NEGERI 01 MENTENG JAYA',
+      headmasterName: userProfile.kopConfig?.headmasterName || userProfile.headmasterName || 'Dra. Hj. Siti Rohmah, M.Pd.',
+      headmasterNip: userProfile.kopConfig?.headmasterNip || userProfile.headmasterNip || '',
+      teacherName: userProfile.kopConfig?.teacherName || userProfile.name || 'Guru Pengampu, S.Pd.',
+      teacherNip: userProfile.kopConfig?.teacherNip || userProfile.nip || '',
+    };
+
     const inputData = {
       satuanPendidikan,
       documentType,
@@ -203,11 +226,12 @@ export const ModuleGeneratorWizard: React.FC = () => {
       topic: topic.trim(),
       tahunAjaran,
       semester,
-      namaSekolah: userProfile.school || 'SD Negeri 006',
-      namaPenyusun: userProfile.name || 'Guru Pengampu',
-      nipPenyusun: userProfile.nip || '',
-      namaKepalaSekolah: userProfile.headmasterName || 'Kepala Sekolah, M.Pd.',
-      nipKepalaSekolah: userProfile.headmasterNip || '',
+      namaSekolah: effectiveKopConfig.schoolName || userProfile.school || 'SD Negeri 006',
+      namaPenyusun: effectiveKopConfig.teacherName || userProfile.name || 'Guru Pengampu',
+      nipPenyusun: effectiveKopConfig.teacherNip || userProfile.nip || '',
+      namaKepalaSekolah: effectiveKopConfig.headmasterName || userProfile.headmasterName || 'Kepala Sekolah, M.Pd.',
+      nipKepalaSekolah: effectiveKopConfig.headmasterNip || userProfile.headmasterNip || '',
+      kopConfig: effectiveKopConfig,
       targetPesertaDidik,
       dpl8Selected,
       kbcTemaSelected,
@@ -232,7 +256,18 @@ export const ModuleGeneratorWizard: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         if (data.aiHtml) {
-          fullDocHtml = data.aiHtml;
+          let processedAiHtml = data.aiHtml;
+          if (!processedAiHtml.includes('kop-surat-official')) {
+            const kopHtml = generateKopSuratHtml(effectiveKopConfig, inputData.namaSekolah);
+            const signatureHtml = generateSignatureBlockHtml(effectiveKopConfig, inputData.namaSekolah);
+            processedAiHtml = `
+            <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 text-slate-900 space-y-6 max-w-4xl mx-auto font-sans leading-relaxed">
+              ${kopHtml}
+              ${processedAiHtml}
+              ${!processedAiHtml.includes('signature-section') ? signatureHtml : ''}
+            </div>`;
+          }
+          fullDocHtml = processedAiHtml;
         }
       }
     } catch (apiErr) {
@@ -427,7 +462,7 @@ export const ModuleGeneratorWizard: React.FC = () => {
   return (
     <div id="module-generator-wizard" className="max-w-6xl mx-auto space-y-6 pb-12">
       {/* HEADER BANNER */}
-      <div className="bg-gradient-to-r from-[#00529B] via-[#0066c0] to-[#E65100] text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden">
+      <div id="module-generator-wizard-header" className="bg-gradient-to-r from-[#00529B] via-[#0066c0] to-[#E65100] text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden">
         <div className="relative z-10 max-w-3xl space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold tracking-wide uppercase">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -446,7 +481,7 @@ export const ModuleGeneratorWizard: React.FC = () => {
       </div>
 
       {/* WIZARD CONTAINER */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
+      <div id="module-generator-container" className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 dark:border-slate-800">
         
         {/* STEP 1: FORM KONFIGURASI */}
         {step === 1 && (
@@ -1026,8 +1061,8 @@ export const ModuleGeneratorWizard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Action Buttons: Copy, Word, Print, Save to Catalog */}
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Action Buttons: Copy, Word, Print, KOP Settings, Catalog */}
+              <div id="generator-top-actions" className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => handleCopyContent(getActiveTabContent())}
@@ -1042,7 +1077,7 @@ export const ModuleGeneratorWizard: React.FC = () => {
                   type="button"
                   onClick={() => handleDownloadWord(getActiveTabContent(), activeResultTab.toUpperCase())}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#00529B] dark:text-blue-300 hover:bg-blue-100 text-xs font-extrabold transition"
-                  title="Unduh file Word (.doc) lengkap tabel & format resmi"
+                  title="Unduh file Word (.doc) lengkap kop surat, tabel, & tanda tangan"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Unduh Word (.doc)</span>
@@ -1050,10 +1085,24 @@ export const ModuleGeneratorWizard: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={handlePrintActive}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold transition"
+                  onClick={() => {
+                    setPrintModule(generatedModule);
+                    setIsPrintPreviewOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 hover:bg-amber-100 text-xs font-bold transition"
+                  title="Sesuaikan logo, teks kop surat, nama kepala sekolah, dan pratinjau cetak"
                 >
-                  <Printer className="w-3.5 h-3.5" />
+                  <Sliders className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>KOP & Pengesahan</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePrintActive}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold transition"
+                  title="Cetak langsung atau simpan sebagai PDF"
+                >
+                  <Printer className="w-3.5 h-3.5 text-blue-600" />
                   <span>Cetak / PDF</span>
                 </button>
 
@@ -1072,7 +1121,7 @@ export const ModuleGeneratorWizard: React.FC = () => {
             </div>
 
             {/* TAB SELECTOR (Matching BantuGuru / Multi-Dokumen) */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80">
+            <div id="generator-tabs-bar" className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80">
               {[
                 { id: 'modul', label: generatedModule.type, icon: BookOpen },
                 ...(generatedHtmls.lkpdHtml ? [{ id: 'lkpd', label: 'Lembar Kerja (LKPD)', icon: FileText }] : []),
@@ -1102,7 +1151,7 @@ export const ModuleGeneratorWizard: React.FC = () => {
             </div>
 
             {/* ACTIVE TAB DOCUMENT PREVIEW CANVAS */}
-            <div className="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-950 p-4 sm:p-6 shadow-inner max-h-[720px] overflow-y-auto">
+            <div id="printable-generated-content-wrapper" className="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-950 p-4 sm:p-6 shadow-inner max-h-[720px] overflow-y-auto">
               <div
                 id="printable-generated-content"
                 dangerouslySetInnerHTML={{ __html: getActiveTabContent() }}
@@ -1110,7 +1159,7 @@ export const ModuleGeneratorWizard: React.FC = () => {
             </div>
 
             {/* FOOTER ACTIONS */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div id="generator-footer-bar" className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <span className="text-xs text-slate-500">
                 Dokumen telah tersimpan otomatis ke database lokal aplikasi.
               </span>
